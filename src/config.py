@@ -75,9 +75,11 @@ TEST_SIZE = 0.20
 
 # Production model: Logistic Regression with log1p + standardisation pipeline.
 # These are the values validated in the analysis (C=1, L2 was already optimal).
+# `l1_ratio=0` is pure L2; it replaces the deprecated `penalty="l2"`, which is
+# removed in scikit-learn 1.10 (requires scikit-learn >= 1.8, solver "saga").
 LOGREG_PARAMS = dict(
     C=1.0,
-    penalty="l2",
+    l1_ratio=0,
     solver="saga",
     max_iter=3000,
 )
@@ -103,6 +105,11 @@ DECISION_THRESHOLD = 0.50
 # --------------------------------------------------------------------------- #
 # MLflow (optional)
 # --------------------------------------------------------------------------- #
+# MLflow 3.x puts the filesystem tracking backend (file://.../mlruns) into
+# maintenance mode and raises unless this opt-in flag is set. We default to the
+# local file store, so enable it here (without clobbering a user override).
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+
 MLFLOW_TRACKING_URI = os.environ.get(
     "MLFLOW_TRACKING_URI", (PROJECT_ROOT / "mlruns").as_uri()
 )

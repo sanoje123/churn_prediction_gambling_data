@@ -1,10 +1,10 @@
 {
-  "version": "20260630_111125",
-  "trained_at": "2026-06-30T11:11:25.714573+00:00",
+  "version": "20260630_173703",
+  "trained_at": "2026-06-30T17:37:03.837701+00:00",
   "model_type": "LogisticRegression",
   "params": {
     "C": 1.0,
-    "penalty": "l2",
+    "l1_ratio": 0,
     "solver": "saga",
     "max_iter": 3000
   },

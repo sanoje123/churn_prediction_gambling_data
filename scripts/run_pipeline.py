@@ -35,14 +35,29 @@ logger = get_logger("pipeline")
 
 
 def _try_mlflow():
-    """Return the mlflow module if installed, else None (optional dependency)."""
+    """Return the mlflow module if installed and reachable, else None.
+
+    MLflow is an optional dependency, so a missing install is downgraded to a
+    warning. A *misconfigured* backend (unreachable server, unsupported store)
+    is a real problem the user usually wants to see, so it is logged loudly with
+    the traceback before we fall back to local artefacts only.
+    """
     try:
         import mlflow  # noqa: PLC0415
+    except ImportError:
+        logger.warning("MLflow not installed; logging to local artefacts only.")
+        return None
+    try:
         mlflow.set_tracking_uri(config.MLFLOW_TRACKING_URI)
         mlflow.set_experiment(config.MLFLOW_EXPERIMENT)
         return mlflow
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("MLflow not available (%s); logging to local artefacts only.", exc)
+    except Exception:  # noqa: BLE001
+        logger.error(
+            "MLflow is installed but tracking is misconfigured (uri=%s); "
+            "logging to local artefacts only.",
+            config.MLFLOW_TRACKING_URI,
+            exc_info=True,
+        )
         return None
 
 
