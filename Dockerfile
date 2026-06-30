@@ -1,3 +1,14 @@
+# =============================================================================
+# ILLUSTRATIVE / REFERENCE IMAGE — part of the On-Prem showcase.
+# -----------------------------------------------------------------------------
+# Builds the churn serving API container as designed for On-Prem deployment
+# (ARCHITECTURE.md 4). In the real pipeline the CI `build` job fetches the
+# Production model from the MLflow registry into ./artifacts before running
+# `docker build` (see .github/workflows/ci.yml). It is not built automatically
+# in this showcase repo — the internal image registry and model registry are
+# not provisioned here.
+# =============================================================================
+
 # Lightweight, On-Prem friendly image for the churn serving API.
 FROM python:3.11-slim
 
@@ -10,7 +21,7 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 # Copy source and the trained artefacts.
 # Artefacts are NOT in Git (model registry / object store, see ARCHITECTURE.md
-# §4); CI fetches the Production model into ./artifacts before this build. The
+# 4); CI fetches the Production model into ./artifacts before this build. The
 # .gitkeep keeps the dir present so this COPY never fails on a fresh checkout;
 # the guard below fails the build loudly rather than ship an image with no model.
 COPY src/ ./src/

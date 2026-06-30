@@ -1,19 +1,35 @@
-# On-Prem CI/CD via GitHub Actions on self-hosted runners.
-# (Self-hosted runners live inside the data centre, so the internal registry and
-#  Kubernetes API are reachable without exposing anything to the public internet.)
-name: CI/CD
+# =============================================================================
+# ILLUSTRATIVE / REFERENCE PIPELINE — not active in this showcase repository.
+# -----------------------------------------------------------------------------
+# This workflow documents, in principle, how the churn service is meant to be
+# built and shipped on the company's On-Prem infrastructure (see ARCHITECTURE.md
+# 3 "Tooling" and 4 "Deployment"). It targets **self-hosted runners** inside
+# the data centre, an **internal container registry**, an **MLflow model
+# registry**, and a **Kubernetes** cluster — none of which exist in this public
+# showcase repo.
+#
+# To keep it from queuing against runners that aren't here, it is wired to run
+# only on a manual `workflow_dispatch`. The real On-Prem trigger (push / PR to
+# main) is shown commented below. Enable it — and provide the repo
+# vars/secrets referenced throughout — once the infrastructure is provisioned.
+# =============================================================================
+name: CI/CD (reference — On-Prem)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  # Manual trigger only, so this illustrative workflow never auto-runs here.
+  workflow_dispatch:
+  # --- Real On-Prem trigger (enable when self-hosted runners exist) ----------
+  # push:
+  #   branches: [main]
+  # pull_request:
+  #   branches: [main]
 
 env:
   REGISTRY: ${{ vars.INTERNAL_REGISTRY }}   # e.g. registry.internal.company:5000
   IMAGE_NAME: churn-api
 
 jobs:
+  # --- ARCHITECTURE.md , step 2: test gate (a red build never ships) --------
   lint:
     runs-on: [self-hosted, linux]
     container: python:3.11-slim
@@ -28,8 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: pip install -r requirements.txt
+      # Includes test_train_serve_feature_parity — enforces the "one artefact,
+      # no skew" principle (ARCHITECTURE.md 1.2) before anything is shipped.
       - run: pytest -q
 
+  # --- ARCHITECTURE.md 4, steps 1 & 3: package the image ---------------------
   build:
     needs: [lint, test]
     if: github.ref == 'refs/heads/main'
@@ -39,7 +58,7 @@ jobs:
 
       # Artefacts are NOT in Git — they live in the MLflow registry / MinIO.
       # Pull the current Production model into ./artifacts so the image can bake
-      # it in (ARCHITECTURE.md §4, step 1). The Dockerfile guards on model.pkl,
+      # it in (ARCHITECTURE.md 4, step 1). The Dockerfile guards on model.pkl,
       # so a failed/empty fetch fails the build instead of shipping an empty image.
       - name: Fetch Production model from registry
         env:
@@ -70,6 +89,7 @@ jobs:
           push: true
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+  # --- ARCHITECTURE.md 4, step 4: ship + manual approval + k8s rollout --------
   deploy:
     needs: build
     if: github.ref == 'refs/heads/main'
