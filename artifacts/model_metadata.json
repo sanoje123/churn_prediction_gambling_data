@@ -1,0 +1,20 @@
+{
+  "version": "20260630_111125",
+  "trained_at": "2026-06-30T11:11:25.714573+00:00",
+  "model_type": "LogisticRegression",
+  "params": {
+    "C": 1.0,
+    "penalty": "l2",
+    "solver": "saga",
+    "max_iter": 3000
+  },
+  "n_samples": 10000,
+  "n_features": 21,
+  "churn_rate": 0.1728,
+  "test_metrics": {
+    "roc_auc": 0.8542664131794703,
+    "pr_auc": 0.5369683202373478,
+    "brier": 0.1058914743338257
+  },
+  "data_md5": "9a8b9b61ff47a46f64c054079af8ac5e"
+}

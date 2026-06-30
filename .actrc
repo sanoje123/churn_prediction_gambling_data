@@ -1,0 +1,7 @@
+# Default flags for `act` (https://github.com/nektos/act)
+# Map this repo's self-hosted runner label to a real container image,
+# so `act` knows what to spin up for `runs-on: [self-hosted, linux]`.
+-P self-hosted=catthehacker/ubuntu:act-latest
+
+# Quieter, more deterministic local runs.
+--container-architecture linux/amd64

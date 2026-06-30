@@ -1,0 +1,86 @@
+# On-Prem CI/CD via GitHub Actions on self-hosted runners.
+# (Self-hosted runners live inside the data centre, so the internal registry and
+#  Kubernetes API are reachable without exposing anything to the public internet.)
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ${{ vars.INTERNAL_REGISTRY }}   # e.g. registry.internal.company:5000
+  IMAGE_NAME: churn-api
+
+jobs:
+  lint:
+    runs-on: [self-hosted, linux]
+    container: python:3.11-slim
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install ruff
+      - run: ruff check src/ scripts/
+
+  test:
+    runs-on: [self-hosted, linux]
+    container: python:3.11-slim
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install -r requirements.txt
+      - run: pytest -q
+
+  build:
+    needs: [lint, test]
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux]
+    steps:
+      - uses: actions/checkout@v4
+
+      # Artefacts are NOT in Git — they live in the MLflow registry / MinIO.
+      # Pull the current Production model into ./artifacts so the image can bake
+      # it in (ARCHITECTURE.md §4, step 1). The Dockerfile guards on model.pkl,
+      # so a failed/empty fetch fails the build instead of shipping an empty image.
+      - name: Fetch Production model from registry
+        env:
+          MLFLOW_TRACKING_URI: ${{ vars.MLFLOW_TRACKING_URI }}
+          MLFLOW_S3_ENDPOINT_URL: ${{ vars.MINIO_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.MINIO_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.MINIO_SECRET_KEY }}
+        run: |
+          pip install --no-cache-dir mlflow
+          mlflow artifacts download \
+            --artifact-uri "models:/${IMAGE_NAME}/Production" \
+            --dst-path artifacts/
+          test -f artifacts/model.pkl \
+            || { echo "::error::model.pkl not found after registry download"; exit 1; }
+
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to internal registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, linux]
+    # The "production" Environment carries required-reviewer protection rules,
+    # i.e. a human must approve before this job runs (manual promotion gate).
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Roll out to Kubernetes
+        run: |
+          kubectl set image deployment/churn-api \
+            churn-api=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -n ml-serving
+          kubectl rollout status deployment/churn-api -n ml-serving

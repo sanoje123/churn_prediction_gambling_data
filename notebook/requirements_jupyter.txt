@@ -1,0 +1,33 @@
+# ============================================================================
+# Requirements for running the analysis notebooks
+#   - churn_final_presentation.ipynb
+#   - churn_analysis_raw_features.ipynb
+#
+# Python 3.11 (tested on 3.11.6). Versions are pinned to the environment the
+# notebooks were executed and validated with.
+#
+# Usage:
+#   python -m venv .venv && .venv\Scripts\activate      (Windows)
+#   pip install -r requirements_jupyter.txt
+#   jupyter lab            # or: jupyter notebook
+# ============================================================================
+
+# --- Jupyter runtime --------------------------------------------------------
+jupyter==1.1.1
+jupyterlab==4.4.10
+notebook==7.4.7
+ipykernel==6.26.0
+nbconvert==7.16.6          # used to execute notebooks headless (CI / re-runs)
+
+# --- Core scientific stack --------------------------------------------------
+numpy==2.3.4
+pandas==2.3.3
+matplotlib==3.10.7
+scikit-learn==1.7.2        # LogReg pipeline, CV, metrics, calibration
+
+# --- Gradient-boosted tree baselines ---------------------------------------
+lightgbm==4.6.0
+xgboost==3.2.0             # GPU optional: device="cuda" if an NVIDIA card is present
+
+# --- Model interpretation ---------------------------------------------------
+shap==0.51.0

@@ -1,0 +1,23 @@
+[
+  "tenure_days",
+  "live_bets_count",
+  "avg_bet_amount",
+  "total_turnover",
+  "total_payout",
+  "ggr",
+  "ggr_margin",
+  "deposit_count",
+  "total_deposit_amount",
+  "deposit_to_turnover_ratio",
+  "days_active_in_observation",
+  "days_since_last_bet",
+  "no_deposit_flag",
+  "bets_per_active_day",
+  "active_span_days",
+  "days_to_first_bet",
+  "activity_consistency",
+  "lifetime_bet_rate",
+  "turnover_per_active_day",
+  "avg_deposit_amount",
+  "deposit_per_bet"
+]

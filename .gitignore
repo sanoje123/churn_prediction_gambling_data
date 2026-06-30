@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Data is exported from the warehouse, not version-controlled.
+data/raw/*
+data/processed/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+# # Trained artefacts go to the model registry / artefact store, not git.
+# artifacts/*.pkl
+# artifacts/*.json
+# artifacts/archive/
+# !artifacts/.gitkeep
+
+# Local MLflow store
+mlruns/
+
+# Report deliverable — lives in the docs store, not the code repo.
+churn_report_final_1.docx
+# MS Office lock / owner temp files (created while a doc is open).
+~$*
